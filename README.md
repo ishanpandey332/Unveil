@@ -7,7 +7,21 @@
 ---
 
 ## 🚀 Live Demo
-> Coming soon — deploying to Vercel + Railway
+
+**[https://unveil-drab-chi.vercel.app](https://unveil-drab-chi.vercel.app)**
+
+---
+
+## 🖼️ Screenshots
+
+### Landing Page
+![Landing Page](assets/landing.png)
+
+### Dashboard
+![Dashboard](assets/dashboard.png)
+
+### Detect Page
+![Detect Page](assets/detect.png)
 
 ---
 
@@ -35,6 +49,7 @@
 | Video AI | ffmpeg frame extraction + Groq Vision |
 | News AI | Google Fact Check API + Groq |
 | Extension | Chrome MV3 |
+| Deploy | Vercel (frontend) + Render (backend) |
 
 ---
 
@@ -126,12 +141,6 @@ create table scans (
 1. Go to `chrome://extensions`
 2. Enable **Developer Mode**
 3. Click **Load unpacked** → select the `extension/` folder
-
----
-
-## 🖼️ Screenshots
-
-> Dashboard · Detect Page · Chrome Extension
 
 ---
 
