@@ -227,13 +227,22 @@ Respond ONLY with this exact JSON:
 
 const getHistory = async (req, res) => {
   try {
-    const { data } = await supabase
+    console.log('Fetching history for user:', req.user.id)
+    const { data, error } = await supabase
       .from('scans')
       .select('*')
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false })
-    res.json(data)
+
+    if (error) {
+      console.error('History fetch error:', error)
+      return res.status(500).json({ error: 'Could not fetch history' })
+    }
+
+    console.log('History fetched:', data?.length || 0, 'items')
+    res.json(data || [])
   } catch (err) {
+    console.error('History error:', err)
     res.status(500).json({ error: 'Could not fetch history' })
   }
 }

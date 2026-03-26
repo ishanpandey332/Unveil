@@ -502,8 +502,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     api.get('/detect/history')
-      .then(res => setHistory(res.data))
-      .catch(console.error)
+      .then(res => {
+        console.log('History response:', res.data)
+        setHistory(res.data || [])
+      })
+      .catch(err => {
+        console.error('History fetch error:', err)
+        setHistory([])
+      })
       .finally(() => setLoading(false))
   }, [])
 
