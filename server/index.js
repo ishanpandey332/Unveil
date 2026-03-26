@@ -4,15 +4,23 @@ require('dotenv').config()
 
 const authRoutes = require('./routes/auth')
 const detectRoutes = require('./routes/detect')
+const stripeRoutes = require('./routes/stripe')
+const { globalLimiter } = require('./middleware/rateLimit')
 
 const app = express()
 
+// Stripe webhook needs raw body - must come before other middleware
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }))
+
+// Security middleware
 app.use(cors())
+app.use(globalLimiter) // Apply global rate limit to all routes
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
 app.use('/api/auth', authRoutes)
 app.use('/api/detect', detectRoutes)
+app.use('/api/stripe', stripeRoutes)
 
 app.get('/', (req, res) => {
   res.json({ message: 'Unveil API is running 🚀' })

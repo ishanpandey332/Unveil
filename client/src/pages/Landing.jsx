@@ -223,8 +223,8 @@ export default function Landing() {
       <nav className="lp-nav">
         <div className="lp-logo">UNVEIL</div>
         <div className="lp-nav-links">
-          {['Features', 'How It Works', 'FAQs', 'About'].map(l => (
-            <button key={l} className="lp-nav-link">{l}</button>
+          {['Features', 'How It Works', 'Pricing'].map(l => (
+            <button key={l} className="lp-nav-link" onClick={() => l === 'Pricing' && navigate('/pricing')}>{l}</button>
           ))}
         </div>
         <div className="lp-nav-right">
@@ -255,10 +255,10 @@ export default function Landing() {
       {/* STATS */}
       <div className="lp-stats">
         {[
-          { num: '99%', lbl: 'Detection Accuracy' },
-          { num: '4', lbl: 'Content Types' },
-          { num: '<2s', lbl: 'Analysis Speed' },
-          { num: 'Free', lbl: 'Forever Plan' },
+          { num: '4-in-1', lbl: 'Detection Types' },
+          { num: '6+', lbl: 'AI Models Used' },
+          { num: '<3s', lbl: 'Avg Analysis' },
+          { num: 'Free', lbl: 'To Start' },
         ].map((s, i) => (
           <div key={i} className="lp-stat">
             <div className="lp-stat-num">{s.num}</div>
@@ -344,7 +344,7 @@ export default function Landing() {
       {/* CTA */}
       <div className="lp-cta">
         <div className="lp-cta-title">Ready to <span>Unveil the truth?</span></div>
-        <p className="lp-cta-sub">Join thousands detecting AI content with Unveil. Free forever, no credit card required.</p>
+        <p className="lp-cta-sub">Start detecting AI content today. Free tier available, no credit card required.</p>
         <div className="lp-hero-btns">
           <button className="lp-hero-btn-primary" onClick={() => navigate('/signup')}>Create Free Account →</button>
           <button className="lp-hero-btn-ghost" onClick={() => navigate('/login')}>Sign In</button>
@@ -353,7 +353,7 @@ export default function Landing() {
 
       {/* FOOTER */}
       <footer className="lp-footer">
-        <div className="lp-footer-copy">© 2025 Unveil · AI Content Detection</div>
+        <div className="lp-footer-copy">© 2026 Unveil · AI Content Detection</div>
         <div className="lp-footer-links">
           {['Privacy', 'Terms', 'Contact', 'GitHub'].map(l => (
             <span key={l} className="lp-footer-link">{l}</span>

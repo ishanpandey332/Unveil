@@ -30,19 +30,35 @@ const login = async (req, res) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return res.status(400).json({ error: error.message })
 
-    const { data: profile } = await supabase
+    // Try to get profile, create if doesn't exist
+    let { data: profile } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', data.user.id)
       .single()
+
+    // If no profile exists (old user), create one
+    if (!profile) {
+      const { data: newProfile } = await supabase
+        .from('profiles')
+        .insert({
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.email.split('@')[0]
+        })
+        .select()
+        .single()
+      profile = newProfile
+    }
 
     const token = jwt.sign(
       { id: data.user.id, email },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
-    res.json({ token, user: profile })
+    res.json({ token, user: profile || { id: data.user.id, email } })
   } catch (err) {
+    console.error('Login error:', err)
     res.status(500).json({ error: 'Server error' })
   }
 }

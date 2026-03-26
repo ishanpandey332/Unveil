@@ -1,73 +1,125 @@
 const axios = require('axios')
 const Groq = require('groq-sdk')
 const supabase = require('../config/supabase')
+const { analyzeText } = require('../utils/textAnalysis')
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
 const detectText = async (req, res) => {
   const { text } = req.body
   if (!text) return res.status(400).json({ error: 'No text provided' })
+  if (text.length < 50) return res.status(400).json({ error: 'Text too short. Minimum 50 characters for accurate detection.' })
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert AI content detector. Analyze text and identify specific phrases that indicate AI generation.'
-        },
-        {
-          role: 'user',
-          content: `Analyze this text and detect if it was written by AI or human:
+    // Step 1: Statistical analysis (fast, deterministic)
+    const statistical = analyzeText(text)
+    console.log('Statistical analysis:', JSON.stringify(statistical.scores))
 
-"${text}"
+    // Step 2: LLM analysis (provides explanations and phrase highlighting)
+    let llmData = null
+    try {
+      const completion = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert AI content detector. Analyze writing style, not just content.
+Look for: uniform sentence structure, lack of personal voice, overuse of transition words,
+generic phrasing, absence of typos/colloquialisms, and overly formal tone.
+Be conservative - only mark as AI if you see clear patterns.`
+          },
+          {
+            role: 'user',
+            content: `Analyze this text for AI generation indicators:
 
-Respond ONLY with this exact JSON:
+"${text.substring(0, 3000)}"
+
+Statistical pre-analysis found:
+- Sentence length variance: ${statistical.metrics.burstiness.meaning}
+- Vocabulary pattern: ${statistical.metrics.vocabulary.meaning}
+- AI phrases detected: ${statistical.metrics.patterns.patternsFound}
+- Preliminary AI score: ${statistical.scores.aiScore}%
+
+Based on this AND your own analysis, respond ONLY with JSON:
 {
-  "result": "ai" or "human",
-  "confidence": number 0-100,
-  "aiScore": number 0-100,
-  "humanScore": number 0-100,
-  "reason": "2-3 sentence explanation",
+  "llmAiScore": number 0-100,
+  "reason": "2-3 sentence explanation focusing on specific evidence",
   "highlights": [
-    {
-      "phrase": "exact phrase from text",
-      "reason": "why this is AI-like",
-      "severity": "high" or "medium" or "low"
-    }
+    {"phrase": "exact phrase", "reason": "why AI-like", "severity": "high|medium|low"}
   ]
 }`
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 2000,
-    })
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 1500,
+      })
 
-    const rawText = completion.choices[0].message.content.trim()
-    console.log('Groq response:', rawText)
+      const rawText = completion.choices[0].message.content.trim()
+      const cleaned = rawText.replace(/```json|```/g, '').trim()
+      llmData = JSON.parse(cleaned)
+    } catch (llmErr) {
+      console.log('LLM analysis failed, using statistical only:', llmErr.message)
+    }
 
-    const cleaned = rawText.replace(/```json|```/g, '').trim()
-    const data = JSON.parse(cleaned)
+    // Step 3: Combine scores (statistical is base, LLM adjusts)
+    const statWeight = 0.4
+    const llmWeight = 0.6
 
+    let finalAiScore, finalHumanScore, confidence
+
+    if (llmData) {
+      // Weighted combination
+      finalAiScore = Math.round(
+        statistical.scores.aiScore * statWeight +
+        llmData.llmAiScore * llmWeight
+      )
+      finalHumanScore = 100 - finalAiScore
+
+      // Confidence based on agreement between methods
+      const agreement = 100 - Math.abs(statistical.scores.aiScore - llmData.llmAiScore)
+      confidence = Math.round((agreement + Math.abs(finalAiScore - 50)) / 2)
+    } else {
+      // Statistical only (fallback)
+      finalAiScore = statistical.scores.aiScore
+      finalHumanScore = statistical.scores.humanScore
+      confidence = statistical.scores.confidence
+    }
+
+    const result = finalAiScore >= 50 ? 'ai' : 'human'
+
+    // Build comprehensive response
+    const response = {
+      result,
+      confidence: Math.min(95, confidence), // Cap at 95% - never claim certainty
+      aiScore: finalAiScore,
+      humanScore: finalHumanScore,
+      reason: llmData?.reason || `Statistical analysis indicates ${result === 'ai' ? 'AI-generated' : 'human-written'} content based on writing patterns.`,
+      highlights: llmData?.highlights || [],
+      methodology: {
+        statistical: {
+          aiScore: statistical.scores.aiScore,
+          burstiness: statistical.metrics.burstiness.meaning,
+          vocabulary: statistical.metrics.vocabulary.meaning,
+          patternsFound: statistical.metrics.patterns.patternsFound
+        },
+        llm: llmData ? { aiScore: llmData.llmAiScore } : null,
+        note: 'Combined statistical + AI analysis. Results are probabilistic, not definitive.'
+      },
+      originalText: text
+    }
+
+    // Save to database
     await supabase.from('scans').insert({
       user_id: req.user.id,
       type: 'text',
       input_preview: text.substring(0, 100),
-      result: data.result,
-      confidence: data.confidence / 100
+      result,
+      confidence: confidence / 100
     })
 
-    res.json({
-      result: data.result,
-      confidence: data.confidence,
-      aiScore: data.aiScore,
-      humanScore: data.humanScore,
-      reason: data.reason,
-      highlights: data.highlights || [],
-      originalText: text
-    })
+    res.json(response)
   } catch (err) {
-    console.error('Groq error:', err.message)
+    console.error('Detection error:', err.message)
     res.status(500).json({ error: 'Text detection failed' })
   }
 }

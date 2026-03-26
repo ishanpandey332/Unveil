@@ -477,6 +477,43 @@ export default function Detect() {
               </div>
             )}
 
+            {/* Methodology - Text detection transparency */}
+            {result.methodology && (
+              <div className="dt-box" style={{ background: 'rgba(99,102,241,0.04)', borderColor: 'rgba(99,102,241,0.12)' }}>
+                <div className="dt-box-label" style={{ color: '#a5b4fc' }}>Detection Methodology</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: 12, borderRadius: 10 }}>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>STATISTICAL ANALYSIS</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'JetBrains Mono', color: '#a5b4fc' }}>{result.methodology.statistical?.aiScore}%</div>
+                  </div>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: 12, borderRadius: 10 }}>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 4 }}>LLM ANALYSIS</div>
+                    <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'JetBrains Mono', color: '#a5b4fc' }}>{result.methodology.llm?.aiScore ?? 'N/A'}%</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                  {result.methodology.statistical?.burstiness && (
+                    <span style={{ padding: '3px 10px', borderRadius: 100, fontSize: 10, background: 'rgba(99,102,241,0.1)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.2)' }}>
+                      Burstiness: {result.methodology.statistical.burstiness}
+                    </span>
+                  )}
+                  {result.methodology.statistical?.vocabulary && (
+                    <span style={{ padding: '3px 10px', borderRadius: 100, fontSize: 10, background: 'rgba(99,102,241,0.1)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.2)' }}>
+                      Vocabulary: {result.methodology.statistical.vocabulary}
+                    </span>
+                  )}
+                  {result.methodology.statistical?.patternsFound > 0 && (
+                    <span style={{ padding: '3px 10px', borderRadius: 100, fontSize: 10, background: 'rgba(244,63,94,0.1)', color: '#fca5a5', border: '1px solid rgba(244,63,94,0.2)' }}>
+                      {result.methodology.statistical.patternsFound} AI patterns found
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text3)', lineHeight: 1.5 }}>
+                  {result.methodology.note}
+                </div>
+              </div>
+            )}
+
             {/* Flags */}
             {result.flags?.length > 0 && (
               <div className="dt-box dt-box-red">
