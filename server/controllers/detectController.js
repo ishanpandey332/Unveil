@@ -109,13 +109,17 @@ Based on this AND your own analysis, respond ONLY with JSON:
     }
 
     // Save to database
-    await supabase.from('scans').insert({
+    const { error: insertError } = await supabase.from('scans').insert({
       user_id: req.user.id,
       type: 'text',
       input_preview: text.substring(0, 100),
       result,
       confidence: confidence / 100
     })
+
+    if (insertError) {
+      console.error('Failed to save scan history:', insertError)
+    }
 
     res.json(response)
   } catch (err) {
@@ -201,13 +205,17 @@ Respond ONLY with this exact JSON:
     }
 
     // Step 3 — Save to Supabase
-    await supabase.from('scans').insert({
+    const { error: insertError } = await supabase.from('scans').insert({
       user_id: req.user.id,
       type: 'image',
       input_preview: `Image: ${req.file.originalname}`,
       result,
       confidence: confidence / 100
     })
+
+    if (insertError) {
+      console.error('Failed to save image scan history:', insertError)
+    }
 
     res.json({
       result,
@@ -353,13 +361,17 @@ const detectVideo = async (req, res) => {
     const result = avgAiScore >= 50 ? 'ai' : 'human'
     const confidence = Math.max(avgAiScore, 100 - avgAiScore)
 
-    await supabase.from('scans').insert({
+    const { error: insertError } = await supabase.from('scans').insert({
       user_id: req.user.id,
       type: 'video',
       input_preview: file ? `Video: ${file.originalname}` : `URL: ${url?.substring(0, 80)}`,
       result,
       confidence: confidence / 100
     })
+
+    if (insertError) {
+      console.error('Failed to save video scan history:', insertError)
+    }
 
     res.json({
       result,
@@ -435,13 +447,17 @@ Respond ONLY with this exact JSON:
     const raw = completion.choices[0].message.content.trim().replace(/```json|```/g, '')
     const data = JSON.parse(raw)
 
-    await supabase.from('scans').insert({
+    const { error: insertError } = await supabase.from('scans').insert({
       user_id: req.user.id,
       type: 'text',
       input_preview: `News: ${claim.substring(0, 80)}`,
       result: data.verdict === 'true' ? 'human' : 'ai',
       confidence: data.credibilityScore / 100
     })
+
+    if (insertError) {
+      console.error('Failed to save news scan history:', insertError)
+    }
 
     res.json({
       verdict: data.verdict,
@@ -505,13 +521,17 @@ const detectImageUrl = async (req, res) => {
       explanation = parsed.explanation || ''
     } catch (e) { console.log('Groq vision error:', e.message) }
 
-    await supabase.from('scans').insert({
+    const { error: insertError } = await supabase.from('scans').insert({
       user_id: req.user.id,
       type: 'image',
       input_preview: 'Image from extension',
       result,
       confidence: confidence / 100
     })
+
+    if (insertError) {
+      console.error('Failed to save extension image scan history:', insertError)
+    }
 
     res.json({ result, confidence, aiScore, humanScore, explanation, indicators })
   } catch (err) {

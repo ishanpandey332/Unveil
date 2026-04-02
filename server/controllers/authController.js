@@ -7,11 +7,15 @@ const signup = async (req, res) => {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) return res.status(400).json({ error: error.message })
 
-    await supabase.from('profiles').insert({
+    const { error: profileError } = await supabase.from('profiles').insert({
       id: data.user.id,
       name,
       email
     })
+
+    if (profileError) {
+      console.error('Failed to create profile on signup:', profileError)
+    }
 
     const token = jwt.sign(
       { id: data.user.id, email },
@@ -39,7 +43,7 @@ const login = async (req, res) => {
 
     // If no profile exists (old user), create one
     if (!profile) {
-      const { data: newProfile } = await supabase
+      const { data: newProfile, error: profileError } = await supabase
         .from('profiles')
         .insert({
           id: data.user.id,
@@ -48,6 +52,10 @@ const login = async (req, res) => {
         })
         .select()
         .single()
+
+      if (profileError) {
+        console.error('Failed to create profile on login:', profileError)
+      }
       profile = newProfile
     }
 
