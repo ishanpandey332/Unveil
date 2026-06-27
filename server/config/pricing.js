@@ -31,6 +31,8 @@ const TIERS = {
     priceYearly: 144, // $12/mo billed yearly
     stripePriceIdMonthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || 'price_pro_monthly',
     stripePriceIdYearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || 'price_pro_yearly',
+    razorpayPlanIdMonthly: process.env.RAZORPAY_PRO_MONTHLY_PLAN_ID || 'plan_pro_monthly',
+    razorpayPlanIdYearly: process.env.RAZORPAY_PRO_YEARLY_PLAN_ID || 'plan_pro_yearly',
     limits: {
       scansPerHour: 200,
       videoScansPerHour: 50,
@@ -69,7 +71,12 @@ function getTierLimits(tier = 'free') {
 }
 
 function getTierByPriceId(priceId) {
-  if (priceId === TIERS.pro.stripePriceIdMonthly || priceId === TIERS.pro.stripePriceIdYearly) {
+  if (
+    priceId === TIERS.pro.stripePriceIdMonthly ||
+    priceId === TIERS.pro.stripePriceIdYearly ||
+    priceId === TIERS.pro.razorpayPlanIdMonthly ||
+    priceId === TIERS.pro.razorpayPlanIdYearly
+  ) {
     return 'pro'
   }
   return 'free'

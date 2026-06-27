@@ -84,4 +84,36 @@ const getMe = async (req, res) => {
   }
 }
 
-module.exports = { signup, login, getMe }
+const crypto = require('crypto')
+
+const getApiKey = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('api_key')
+      .eq('id', req.user.id)
+      .single()
+
+    if (error) return res.status(400).json({ error: error.message })
+    res.json({ apiKey: data?.api_key || null })
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' })
+  }
+}
+
+const generateApiKey = async (req, res) => {
+  try {
+    const newApiKey = 'uv_live_' + crypto.randomBytes(24).toString('hex')
+    const { error } = await supabase
+      .from('profiles')
+      .update({ api_key: newApiKey })
+      .eq('id', req.user.id)
+
+    if (error) return res.status(400).json({ error: error.message })
+    res.json({ apiKey: newApiKey })
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' })
+  }
+}
+
+module.exports = { signup, login, getMe, getApiKey, generateApiKey }

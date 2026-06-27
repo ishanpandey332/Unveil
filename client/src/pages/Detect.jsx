@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api/axios'
+import { exportScanToPDF } from '../utils/pdfExport'
 
 /* ── CSS injected once ── */
 const CSS = `
@@ -214,6 +215,15 @@ const CSS = `
 
   @keyframes spin { to { transform: rotate(360deg); } }
   .dt-spin { display: inline-block; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+  .dt-disclaimer {
+    margin-top: 24px; padding: 16px 20px; border-radius: 16px;
+    background: rgba(251, 191, 36, 0.03); border: 1px solid rgba(251, 191, 36, 0.15);
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .dt-disclaimer-icon { font-size: 16px; color: #fbbf24; flex-shrink: 0; margin-top: 1px; }
+  .dt-disclaimer-text { font-size: 12.5px; color: rgba(248, 250, 255, 0.6); line-height: 1.6; text-align: left; }
+  .dt-disclaimer-title { font-size: 13px; font-weight: 700; color: #fbbf24; margin-bottom: 4px; letter-spacing: 0.5px; text-transform: uppercase; }
 `
 
 export default function Detect() {
@@ -226,6 +236,7 @@ export default function Detect() {
   const [videoUrl, setVideoUrl] = useState('')
   const [videoInputMode, setVideoInputMode] = useState('file')
   const [newsText, setNewsText] = useState('')
+  const [urlInput, setUrlInput] = useState('')
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -242,7 +253,7 @@ export default function Detect() {
   /* ── read ?tab= param and set active tab ── */
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab && ['text', 'image', 'video', 'news'].includes(tab)) {
+    if (tab && ['text', 'image', 'video', 'url', 'news'].includes(tab)) {
       setMode(tab)
     }
   }, [searchParams])
@@ -288,10 +299,19 @@ export default function Detect() {
     finally { setLoading(false) }
   }
 
+  const handleUrlScan = async () => {
+    if (!urlInput.trim()) return
+    setLoading(true); reset()
+    try { setResult((await api.post('/detect/url', { url: urlInput })).data) }
+    catch (e) { setError(e.response?.data?.error || 'URL detection failed') }
+    finally { setLoading(false) }
+  }
+
   const tabs = [
     { key: 'text', label: 'Text', icon: '📝' },
     { key: 'image', label: 'Image', icon: '🖼️' },
     { key: 'video', label: 'Video', icon: '🎬' },
+    { key: 'url', label: 'URL', icon: '🔗' },
     { key: 'news', label: 'News', icon: '📰' },
   ]
 
@@ -299,13 +319,13 @@ export default function Detect() {
   const isNews = result?.type === 'news'
   const verdict = isNews
     ? ({ true: 'Likely True', false: 'Likely False', misleading: 'Misleading' }[result.verdict] || 'Unverified')
-    : (isAI ? 'AI Generated' : mode === 'image' ? 'Human Made' : mode === 'video' ? 'Likely Human' : 'Human Written')
+    : (isAI ? 'AI Generated' : mode === 'image' ? 'Human Made' : mode === 'video' ? 'Likely Human' : mode === 'url' ? 'Likely Human' : 'Human Written')
   const verdictColor = isNews
     ? (result.verdict === 'true' ? '#86efac' : result.verdict === 'false' ? '#fca5a5' : '#fde68a')
     : (isAI ? '#fca5a5' : '#86efac')
   const verdictEmoji = isNews
     ? ({ true: '✅', false: '❌', misleading: '⚠️' }[result.verdict] || '❓')
-    : (isAI ? '🤖' : mode === 'image' ? '🖼️' : mode === 'video' ? '🎬' : '👤')
+    : (isAI ? '🤖' : mode === 'image' ? '🖼️' : mode === 'video' ? '🎬' : mode === 'url' ? '🔗' : '👤')
   const resultClass = isNews ? 'dt-result-news' : isAI ? 'dt-result-ai' : 'dt-result-human'
 
   return (
@@ -406,6 +426,20 @@ export default function Detect() {
               disabled={loading || (videoInputMode === 'file' ? !videoFile : !videoUrl.trim())}
               onClick={handleVideoScan}>
               {loading ? <><span className="dt-spin" /> Analyzing frames...</> : 'Analyze Video →'}
+            </button>
+          </>}
+
+          {/* URL */}
+          {mode === 'url' && <>
+            <label className="dt-label">Enter Webpage URL to analyze</label>
+            <input className="dt-input" type="url" value={urlInput} onChange={e => setUrlInput(e.target.value)}
+              placeholder="https://example.com/article-to-analyze" />
+            <div className="dt-info" style={{ marginTop: 12, marginBottom: 16 }}>
+              <span>ℹ️</span>
+              <p>Fetches the webpage content, extracts clean text content, and runs advanced AI detection analysis on it.</p>
+            </div>
+            <button className="dt-btn-primary full" disabled={loading || !urlInput.trim()} onClick={handleUrlScan}>
+              {loading ? <><span className="dt-spin" /> Fetching & Analyzing...</> : 'Analyze URL →'}
             </button>
           </>}
 
@@ -575,10 +609,24 @@ export default function Detect() {
               </div>
             )}
 
-            <button className="dt-btn-ghost" onClick={() => {
-              setResult(null); setError(''); setText(''); setImage(null);
-              setVideoFile(null); setVideoUrl(''); setNewsText('')
-            }}>Scan Another</button>
+            {/* Disclaimer Component */}
+            <div className="dt-disclaimer">
+              <span className="dt-disclaimer-icon">⚠️</span>
+              <div className="dt-disclaimer-text">
+                <div className="dt-disclaimer-title">Disclaimer</div>
+                AI content verification is based on probabilistic heuristics and statistical patterns. Results may contain errors, false positives, or false negatives. Use these scores for informational and guidance purposes only.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
+              <button className="dt-btn-ghost" style={{ marginTop: 0, width: 'auto', flex: 1 }} onClick={() => {
+                setResult(null); setError(''); setText(''); setImage(null);
+                setVideoFile(null); setVideoUrl(''); setNewsText(''); setUrlInput('')
+              }}>Scan Another</button>
+              <button className="dt-btn-primary" style={{ flex: 1, padding: '12px 20px', borderRadius: 14, boxShadow: 'none', marginTop: 0 }} onClick={() => exportScanToPDF(result, mode)}>
+                📥 Export PDF Report
+              </button>
+            </div>
           </div>
         )}
       </div>

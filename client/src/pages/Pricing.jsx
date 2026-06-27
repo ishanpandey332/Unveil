@@ -118,16 +118,21 @@ export default function Pricing() {
       document.head.appendChild(el)
     }
 
-    // Check URL params for checkout result
-    const checkout = searchParams.get('checkout')
-    if (checkout === 'success') setAlert({ type: 'success', msg: 'Subscription activated! Welcome to Pro.' })
-    if (checkout === 'cancelled') setAlert({ type: 'error', msg: 'Checkout cancelled.' })
-
     // Fetch current subscription
     if (user) {
-      api.get('/stripe/subscription').then(res => setSubscription(res.data)).catch(() => {})
+      api.get('/payments/subscription').then(res => setSubscription(res.data)).catch(() => {})
     }
   }, [user, searchParams])
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script')
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+      script.onload = () => resolve(true)
+      script.onerror = () => resolve(false)
+      document.body.appendChild(script)
+    })
+  }
 
   const handleCheckout = async (priceId) => {
     if (!user) {
@@ -135,22 +140,72 @@ export default function Pricing() {
       return
     }
     setLoading(true)
+
+    const isLoaded = await loadRazorpayScript()
+    if (!isLoaded) {
+      setAlert({ type: 'error', msg: 'Razorpay SDK failed to load. Are you offline?' })
+      setLoading(false)
+      return
+    }
+
     try {
-      const { data } = await api.post('/stripe/checkout', { priceId })
-      window.location.href = data.url
+      const { data } = await api.post('/payments/checkout', { priceId })
+
+      const options = {
+        key: data.keyId,
+        subscription_id: data.subscriptionId,
+        name: 'Unveil AI',
+        description: 'Pro Subscription Plan',
+        theme: { color: '#3B82F6' },
+        prefill: {
+          name: user.name || '',
+          email: user.email || ''
+        },
+        handler: async (response) => {
+          setLoading(true)
+          try {
+            await api.post('/payments/verify', {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_subscription_id: response.razorpay_subscription_id,
+              razorpay_signature: response.razorpay_signature
+            })
+
+            setAlert({ type: 'success', msg: 'Subscription activated! Welcome to Pro.' })
+            const res = await api.get('/payments/subscription')
+            setSubscription(res.data)
+          } catch (verifyErr) {
+            setAlert({ type: 'error', msg: verifyErr.response?.data?.error || 'Verification failed' })
+          } finally {
+            setLoading(false)
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false)
+          }
+        }
+      }
+
+      const rzp = new window.Razorpay(options)
+      rzp.open()
     } catch (err) {
       setAlert({ type: 'error', msg: err.response?.data?.error || 'Checkout failed' })
       setLoading(false)
     }
   }
 
-  const handleManage = async () => {
+  const handleCancel = async () => {
+    if (!window.confirm('Are you sure you want to cancel your active Pro subscription?')) {
+      return
+    }
     setLoading(true)
     try {
-      const { data } = await api.post('/stripe/portal')
-      window.location.href = data.url
+      await api.post('/payments/cancel')
+      setAlert({ type: 'success', msg: 'Subscription successfully cancelled.' })
+      const res = await api.get('/payments/subscription')
+      setSubscription(res.data)
     } catch (err) {
-      setAlert({ type: 'error', msg: 'Could not open billing portal' })
+      setAlert({ type: 'error', msg: err.response?.data?.error || 'Failed to cancel subscription' })
       setLoading(false)
     }
   }
@@ -186,7 +241,7 @@ export default function Pricing() {
   const faqs = [
     { q: 'Can I cancel anytime?', a: 'Yes, you can cancel your subscription at any time. You\'ll continue to have access until the end of your billing period.' },
     { q: 'How accurate is the detection?', a: 'Our detection uses a combination of statistical analysis and AI to identify AI-generated content. Accuracy varies by content type, typically 70-90%. Results are probabilistic, not definitive.' },
-    { q: 'What payment methods do you accept?', a: 'We accept all major credit cards (Visa, Mastercard, American Express) through our secure Stripe payment processing.' },
+    { q: 'What payment methods do you accept?', a: 'We accept credit cards, debit cards, UPI, net banking, and popular wallets through our secure Razorpay gateway.' },
     { q: 'Do you offer refunds?', a: 'We offer a full refund within 7 days of purchase if you\'re not satisfied with the service.' },
   ]
 
@@ -241,8 +296,8 @@ export default function Pricing() {
               ) : plan.cta === 'contact' ? (
                 <button className="pr-btn pr-btn-ghost" onClick={() => window.location.href = 'mailto:hello@unveil.app'}>Contact Sales</button>
               ) : subscription?.tier === 'pro' ? (
-                <button className="pr-btn pr-btn-ghost" onClick={handleManage} disabled={loading}>
-                  {loading ? 'Loading...' : 'Manage Subscription'}
+                <button className="pr-btn pr-btn-ghost" onClick={handleCancel} disabled={loading}>
+                  {loading ? 'Loading...' : 'Cancel Subscription'}
                 </button>
               ) : (
                 <button className="pr-btn pr-btn-primary" onClick={() => handleCheckout(plan.priceId)} disabled={loading}>

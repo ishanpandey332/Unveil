@@ -5,9 +5,13 @@ require('dotenv').config()
 const authRoutes = require('./routes/auth')
 const detectRoutes = require('./routes/detect')
 const stripeRoutes = require('./routes/stripe')
+const paymentsRoutes = require('./routes/payments')
 const { globalLimiter } = require('./middleware/rateLimit')
 
 const app = express()
+
+// Trust proxy headers for accurate rate limiting
+app.set('trust proxy', 1)
 
 // Stripe webhook needs raw body - must come before other middleware
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }))
@@ -21,6 +25,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use('/api/auth', authRoutes)
 app.use('/api/detect', detectRoutes)
 app.use('/api/stripe', stripeRoutes)
+app.use('/api/payments', paymentsRoutes)
 
 app.get('/', (req, res) => {
   res.json({ message: 'Unveil API is running 🚀' })
