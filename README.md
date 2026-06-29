@@ -23,14 +23,9 @@
 ## ✨ Features
 
 - 📝 **Text Analysis** — Deep structural and burstiness checks powered by LLaMA 3.3 70B with interactive phrase highlighting.
-- 🔗 **URL Scraper & Analyzer** `[NEW]` — Auto-extracts clean body text from blogs/news sites (stripping tags, scripts, CSS) and classifies it instantly.
 - 🖼️ **Image Vision Scanner** — Identifies synthetic patterns and metadata markers from generators like Midjourney v6 and DALL-E 3.
 - 🎬 **Video Deepfake Analyzer** — Decomposes video files or streams frame-by-frame via `ffmpeg` sampling and scores keyframes with LLaMA 4 Scout.
 - 📰 **Fake News claim Checker** — Integrates Google Fact Check API to compare inputs against verified journalistic claims.
-- 📄 **PDF Report Generator** `[NEW]` — Exports highly structured, dark-themed verification PDF certificates complete with metrics, metadata, and safety disclaimers.
-- 🔑 **Developer API Console** `[NEW]` — Access documentation and client script snippets in **cURL, Node.js, and Python** alongside a self-service console to generate and rotate **API Keys** (`x-api-key`).
-- 📊 **Accuracy Benchmarks** `[NEW]` — Visual ROC curves, F1-scores, and detailed evaluation matrices built with Recharts.
-- 💳 **Razorpay Payment Gateway** `[NEW]` — Seamless Indian payments support with full recurring subscription flows, automatic sandbox fallbacks, and signature verification.
 - 🧩 **Chrome Extension** — MV3 browser companion to scan web content directly via the right-click context menu.
 
 ---
@@ -73,12 +68,7 @@ SIGHTENGINE_SECRET=your_sightengine_secret
 GOOGLE_FACT_CHECK_KEY=your_google_fact_check_api_key
 JWT_SECRET=your_jwt_secret_signing_key
 
-# Razorpay Subscriptions (Optional: falls back to sandbox mock testing if blank)
-RAZORPAY_KEY_ID=rzp_test_...
-RAZORPAY_KEY_SECRET=your_secret_key...
-RAZORPAY_PRO_MONTHLY_PLAN_ID=plan_...
-RAZORPAY_PRO_YEARLY_PLAN_ID=plan_...
-```
+
 
 Start the backend:
 ```bash
