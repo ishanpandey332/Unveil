@@ -11,12 +11,12 @@ const CSS = `
   :root {
     --bg: #07090f;
     --text: #f8faff;
-    --text2: rgba(248,250,255,0.5);
-    --text3: rgba(248,250,255,0.25);
-    --border: rgba(255,255,255,0.07);
-    --border-b: rgba(255,255,255,0.13);
-    --glass: rgba(255,255,255,0.04);
-    --glass2: rgba(255,255,255,0.07);
+    --text2: rgba(248,250,255,0.65);
+    --text3: rgba(248,250,255,0.35);
+    --border: rgba(255,255,255,0.12);
+    --border-b: rgba(255,255,255,0.22);
+    --glass: rgba(255,255,255,0.08);
+    --glass2: rgba(255,255,255,0.15);
   }
   html, body, #root { min-height: 100%; }
   body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
@@ -85,18 +85,18 @@ const CSS = `
   }
 
   .dt-card {
-    background: linear-gradient(145deg, rgba(255,255,255,0.055), rgba(59,130,246,0.025), rgba(255,255,255,0.02));
+    background: linear-gradient(135deg, rgba(255,255,255,0.07), rgba(59,130,246,0.03), rgba(255,255,255,0.02));
     border: 1px solid var(--border); border-radius: 24px; padding: 28px;
-    backdrop-filter: blur(28px); position: relative; overflow: hidden;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.32);
+    backdrop-filter: blur(36px) saturate(130%); position: relative; overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 32px rgba(0, 0, 0, 0.35);
   }
   .dt-card::before {
     content: ''; position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
   }
   .dt-card::after {
     content: ''; position: absolute; bottom: 0; left: 20%; right: 20%; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.1), transparent);
+    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.14), transparent);
   }
 
   .dt-textarea {
